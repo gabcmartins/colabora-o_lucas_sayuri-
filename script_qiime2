@@ -1,0 +1,14 @@
+qiime tools import --type 'SampleData[PairedEndSequencesWithQuality]' --input-path manifest_female.tsv --output-path out_qiime.qza  --input-format PairedEndFastqManifestPhred33V2
+qiime demux summarize \ --i-data out_qiime.qza \ --o-visualization demux.qzv
+qiime dada2 denoise-paired --i-demultiplexed-seqs out_qiime.qza --p-trim-left-f 0 --p-trunc-len-f 210 --p-trim-left-r 2 --p-trunc-len-r 176 --p-n-threads 0 --o-representative-sequences rep-seqs-dada2.qza --o-table table-dada2.qza --o-denoising-stats stats-dada2.qza
+#parameters for truncation and trimming were defined based on the quality score plots in the demux.qzv file, aiming to retain sequences with the 25th percentile of quality scores above Q30.
+qiime metadata tabulate --m-input-file stats-dada2.qza --o-visualization stats-dada2.qzv
+mv rep-seqs-dada2.qza rep-seqs.qza; mv table-dada2.qza table.qza
+qiime feature-table summarize --i-table table.qza --o-visualization table.qzv --m-sample-metadata-file metadata_females.tsv
+qiime feature-table tabulate-seqs --i-data rep-seqs.qza --o-visualization rep-seqs.qzv
+qiime phylogeny align-to-tree-mafft-fasttree --i-sequences rep-seqs.qza --o-alignment aligned-rep-seqs.qza --o-masked-alignment masked-aligned-rep-seqs.qza --o-tree unrooted-tree.qza --o-rooted-tree rooted-tree.qza
+qiime diversity core-metrics-phylogenetic --i-phylogeny rooted-tree.qza --i-table table.qza --p-sampling-depth 18457 --m-metadata-file metadata_females.tsv --output-dir core-metrics-results #samples S1 and S19 were discarted with this sampling depth
+qiime diversity alpha-group-significance --i-alpha-diversity core-metrics-results/faith_pd_vector.qza --m-metadata-file metadata_females.tsv --o-visualization core-metrics-results/faith-pd-group-significance.qzv
+qiime diversity alpha-group-significance --i-alpha-diversity core-metrics-results/evenness_vector.qza --m-metadata-file metadata_females.tsv --o-visualization core-metrics-results/evenness-group-significance.qzv
+qiime diversity beta-group-significance --i-distance-matrix core-metrics-results/unweighted_unifrac_distance_matrix.qza --m-metadata-file metadata_females.tsv --m-metadata-column drug --o-visualization core-metrics-results/unweighted-unifrac-group-significance.qzv --p-pairwise
+qiime diversity alpha-rarefaction --i-table table.qza --i-phylogeny rooted-tree.qza --p-max-depth 14000 --o-visualization alpha-rarefaction.qzv #maxdepth defined by reviewing the “Frequency per sample” information presented in the table.qzv file that was created above
