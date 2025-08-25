@@ -8,7 +8,7 @@ qiime feature-table summarize --i-table table.qza --o-visualization table.qzv --
 qiime feature-table tabulate-seqs --i-data rep-seqs.qza --o-visualization rep-seqs.qzv
 qiime phylogeny align-to-tree-mafft-fasttree --i-sequences rep-seqs.qza --o-alignment aligned-rep-seqs.qza --o-masked-alignment masked-aligned-rep-seqs.qza --o-tree unrooted-tree.qza --o-rooted-tree rooted-tree.qza
 qiime diversity core-metrics-phylogenetic --i-phylogeny rooted-tree.qza --i-table table.qza --p-sampling-depth 26900 --m-metadata-file metadata_females.tsv --output-dir core-metrics-results 
-#samples S1 and S19 were discarted with this sampling depth
+#samples S44,s70,s67,s51 e S43 were discarted with this sampling depth (2 from Sal_Veh, 2 from VPA_Veh and 1 from Sal_mVeh)
 #recommend making your choice by reviewing the information presented in the table.qzv file that was created above.
 #Choose a value that is as high as possible (so you retain more sequences per sample) while excluding as few samples as possible.
 qiime diversity alpha-group-significance --i-alpha-diversity core-metrics-results/faith_pd_vector.qza --m-metadata-file metadata_females.tsv --o-visualization core-metrics-results/faith-pd-group-significance.qzv
