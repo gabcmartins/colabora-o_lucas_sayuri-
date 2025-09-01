@@ -18,3 +18,8 @@ qiime diversity alpha-rarefaction --i-table table.qza --i-phylogeny rooted-tree.
 qiime feature-classifier classify-sklearn --i-classifier silva-138-99-nb-classifier.qza --i-reads rep-seqs.qza --o-classification taxonomy.qza #pre-trained classifier was downloaded from qiime2 page: https://library.qiime2.org/data-resources
 qiime metadata tabulate --m-input-file taxonomy.qza --o-visualization taxonomy.qzv
 qiime feature-table group   --i-table table.qza   --m-metadata-file metadata_females.tsv   --m-metadata-column drug --p-axis sample  --p-mode sum   --o-grouped-table table-grouped.qza     #grouped table to generate grouped taxa bar plot
+
+------------
+#another metric to beta-diversity 
+#Robust Aitchison PCA for sparse compositional data was performed using DEICODE-qiime2 (Martino, et al, 2019)
+qiime deicode rpca     --i-table without-donors-filtered-table.qza     --p-min-feature-count 10     --p-min-sample-count 10000     --o-biplot ordination_withoutdonors.qza     --o-distance-matrix distance_withoutdonors.qza
