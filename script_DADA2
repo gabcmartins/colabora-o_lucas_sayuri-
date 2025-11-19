@@ -1,5 +1,0 @@
-#open R and load dada2 
-R
-library(dada2)
-
-#define the path to the fastqfiles ALREADY WITHOUT ADAPTERS (to remove adapters from 16S fastqfiles, see: removing_adapter_16S

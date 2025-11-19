@@ -1,0 +1,45 @@
+#open R and load dada2 
+R
+library(dada2)
+
+#define the path to the fastqfiles ALREADY WITHOUT ADAPTERS (to remove adapters from 16S fastqfiles, see: removing_adapter_16S
+
+
+path <- "/media/Data/gabicas/colaboracao_lucas_sayuri/lucas/fastqfiles"                                                                  
+list.files(path)
+
+fnFs <- sort(list.files(path, pattern="L001_R1_trimmed.fastq", full.names = TRUE))
+
+fnRs <- sort(list.files(path, pattern="L001_R2_trimmed.fastq", full.names = TRUE))
+
+sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 1)
+
+#Plotting of the quality of reads to decide trunc lenght
+
+> plotQualityProfile(fnFs[1:2])    #forward read
+> plotQualityProfile(fnFs[6:7])    #forward read
+> plotQualityProfile(fnRs[1:2])    #reverse read
+> plotQualityProfile(fnRs[6:7])    #reverse read
+
+filtFs <- file.path(path, "filtered", paste0(sample.names, "_F_filt.fastq.gz"))    #create output variable for forward reads
+filtRs <- file.path(path, "filtered", paste0(sample.names, "_R_filt.fastq.gz"))    #create output variable for reverse reads
+names(filtFs) <- sample.names
+names(filtRs) <- sample.names
+
+out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(220,150),    #trunc position for forward and reverse reads
+              maxN=0, maxEE=c(2,5), truncQ=2, rm.phix=TRUE,              #The maxEE parameter sets the maximum number of “expected errors” allowed in a read #rm.phix function removes sequences originating from the phiX174 control genome
+              compress=TRUE, multithread=TRUE)                           #The truncQ parameter truncates a read at the first nucleotide where the quality score is less than or equal to the specified value --> By default, truncQ = 2, 
+                                                                         #which is considered a very low quality threshold and is not the primary filtering method used in typical DADA2 workflows.
+                                                                         #The maxN parameter specifies the maximum number of ambiguous nucleotides (N's) a sequence can have to be kept. Reads with more N's than this value are discarded. 
+                                                                         #By default, maxN=0 (any sequence with at least one N will be filtered out), which is the standard practice because many downstream DADA2 steps cannot handle N's. 
+> errF <- learnErrors(filtFs, multithread=TRUE)
+> errR <- learnErrors(filtRs, multithread=TRUE)
+
+plotErrors(errF, nominalQ=TRUE)
+
+#Sample Inference
+
+> dadaFs <- dada(filtFs, err=errF, multithread=TRUE)
+> dadaRs <- dada(filtRs, err=errR, multithread=TRUE)
+
+> dadaFs[[1]]
