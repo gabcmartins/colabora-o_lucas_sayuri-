@@ -1,0 +1,12 @@
+#!/bin/bash
+
+for sample in *_R1_001.fastq
+do
+    base=$(basename "$sample" "_R1_001.fastq")
+    cutadapt \
+      -g GTGCCAGCMGCCGCGGTAA \                 #replace for forward read adapter sequence
+      -G GGACTACHVGGGTWTCTAAT \                #replace for reverse read adapter sequence
+      -o "${base}_R1_trimmed.fastq" \
+      -p "${base}_R2_trimmed.fastq" \
+      "${base}_R1_001.fastq" "${base}_R2_001.fastq"
+done
