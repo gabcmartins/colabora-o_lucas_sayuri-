@@ -46,12 +46,12 @@ out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(220,150),    #trunc 
 
 #Sample Inference
 
-> dadaFs <- dada(filtFs, err=errF, multithread=TRUE)
-> dadaRs <- dada(filtRs, err=errR, multithread=TRUE)
+> dadaFs <- dada(derepFs, err=errF, multithread=TRUE)
+> dadaRs <- dada(derepRs, err=errR, multithread=TRUE)
 > dadaFs[[1]]    #dada-class: object describing DADA2 denoising results
 
 #Merge paired reads
-> mergers <- mergePairs(dadaFs, filtFs, dadaRs, filtRs, verbose=TRUE)
+> mergers <- mergePairs(dadaFs, derepFs, dadaRs, derepRs, verbose=TRUE)
 > head(mergers[[1]]) 
 
 #Construct an amplicon sequence variant (ASV) table
@@ -59,6 +59,7 @@ out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(220,150),    #trunc 
 > dim(seqtab)
 > table(nchar(getSequences(seqtab)))
 
+PAREI AQUI DIA 24 DE NOVEMBRO
 #Remove chimeras
 > seqtab.nochim <- removeBimeraDenovo(seqtab, method="consensus", multithread=TRUE, verbose=TRUE)
 > dim(seqtab.nochim) 
