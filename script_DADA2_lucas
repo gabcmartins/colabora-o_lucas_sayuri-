@@ -1,18 +1,15 @@
+conda activate qiime2-amplicon-2024.5
 #open R and load dada2 
 R
 library(dada2)
 
 #define the path to the fastqfiles ALREADY WITHOUT ADAPTERS (to remove adapters from 16S fastqfiles, see: removing_adapter_16S
 
-
-path <- "/media/Data/gabicas/colaboracao_lucas_sayuri/lucas/fastqfiles"                                                                  
-list.files(path)
-
-fnFs <- sort(list.files(path, pattern="L001_R1_trimmed.fastq", full.names = TRUE))
-
-fnRs <- sort(list.files(path, pattern="L001_R2_trimmed.fastq", full.names = TRUE))
-
-sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 1)
+> path <- "/media/Data/gabicas/colaboracao_lucas_sayuri/lucas/fastqfiles"                                                                  
+> list.files(path)
+> fnFs <- sort(list.files(path, pattern="L001_R1_trimmed.fastq", full.names = TRUE))
+> fnRs <- sort(list.files(path, pattern="L001_R2_trimmed.fastq", full.names = TRUE))
+> sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 1)
 
 #Plotting of the quality of reads to decide trunc lenght
 
@@ -21,10 +18,12 @@ sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 1)
 > plotQualityProfile(fnRs[1:2])    #reverse read
 > plotQualityProfile(fnRs[6:7])    #reverse read
 
-filtFs <- file.path(path, "filtered", paste0(sample.names, "_F_filt.fastq.gz"))    #create output variable for forward reads
-filtRs <- file.path(path, "filtered", paste0(sample.names, "_R_filt.fastq.gz"))    #create output variable for reverse reads
-names(filtFs) <- sample.names
-names(filtRs) <- sample.names
+#Filter and trim
+
+> filtFs <- file.path(path, "filtered", paste0(sample.names, "_F_filt.fastq.gz"))    #create output variable for forward reads
+> filtRs <- file.path(path, "filtered", paste0(sample.names, "_R_filt.fastq.gz"))    #create output variable for reverse reads
+> names(filtFs) <- sample.names
+> names(filtRs) <- sample.names
 
 out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(220,150),    #trunc position for forward and reverse reads
               maxN=0, maxEE=c(2,5), truncQ=2, rm.phix=TRUE,              #The maxEE parameter sets the maximum number of “expected errors” allowed in a read #rm.phix function removes sequences originating from the phiX174 control genome
@@ -32,14 +31,56 @@ out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(220,150),    #trunc 
                                                                          #which is considered a very low quality threshold and is not the primary filtering method used in typical DADA2 workflows.
                                                                          #The maxN parameter specifies the maximum number of ambiguous nucleotides (N's) a sequence can have to be kept. Reads with more N's than this value are discarded. 
                                                                          #By default, maxN=0 (any sequence with at least one N will be filtered out), which is the standard practice because many downstream DADA2 steps cannot handle N's. 
+#Learn the error rates
+
 > errF <- learnErrors(filtFs, multithread=TRUE)
 > errR <- learnErrors(filtRs, multithread=TRUE)
+> plotErrors(errF, nominalQ=TRUE)
 
-plotErrors(errF, nominalQ=TRUE)
+#Dereplication - PS: DIDN'T DO THIS THE 1st TIME
+
+> derepFs <- derepFastq(filtFs, verbose=TRUE)
+> derepRs <- derepFastq(filtRs, verbose=TRUE)
+> names(derepFs) <- sample.names
+> names(derepRs) <- sample.names
 
 #Sample Inference
 
 > dadaFs <- dada(filtFs, err=errF, multithread=TRUE)
 > dadaRs <- dada(filtRs, err=errR, multithread=TRUE)
+> dadaFs[[1]]    #dada-class: object describing DADA2 denoising results
 
-> dadaFs[[1]]
+#Merge paired reads
+> mergers <- mergePairs(dadaFs, filtFs, dadaRs, filtRs, verbose=TRUE)
+> head(mergers[[1]]) 
+
+#Construct an amplicon sequence variant (ASV) table
+> seqtab <- makeSequenceTable(mergers)
+> dim(seqtab)
+> table(nchar(getSequences(seqtab)))
+
+#Remove chimeras
+> seqtab.nochim <- removeBimeraDenovo(seqtab, method="consensus", multithread=TRUE, verbose=TRUE)
+> dim(seqtab.nochim) 
+> sum(seqtab.nochim)/sum(seqtab)  #proportion beetween number of reads without chimeras and number of reads with chimeras to check for proportion of chimeric sequences
+> write.csv(seqtab.nochim, "seqtab_nochim.csv", quote = FALSE)
+
+#Steps to check the number of reads that made it through each step in the pipeline (input filtered denoisedF denoisedR merged nonchim)
+> getN <- function(x) sum(getUniques(x))
+> track <- cbind(out, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(mergers, getN), rowSums(seqtab.nochim))
+> colnames(track) <- c("input", "filtered", "denoisedF", "denoisedR", "merged", "nonchim")
+> rownames(track) <- sample.names
+> head(track)
+> write.csv(track, file="track_table.csv", row.names=TRUE) 
+
+#Assign taxonomy
+> taxa <- assignTaxonomy(seqtab.nochim, "/media/Data/gabicas/colaboracao_lucas_sayuri/lucas/fastqfiles/filtered/silva_nr_v138_train_set.fa.gz", multithread=TRUE)
+> taxa.print <- taxa 
+> rownames(taxa.print) <- NULL # Removing sequence rownames for display only
+> head(taxa.print)
+> write.csv(taxa, "taxa_table.csv", quote = FALSE)
+
+#Saving all the information so far to recover R enviroment
+> saveRDS(seqtab.nochim, "seqtab_final.rds")
+> saveRDS(taxa, "taxa_final.rds")
+> save.image("meu_ambiente_lucas.RData")
