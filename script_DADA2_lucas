@@ -59,7 +59,6 @@ out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(220,150),    #trunc 
 > dim(seqtab)
 > table(nchar(getSequences(seqtab)))
 
-PAREI AQUI DIA 24 DE NOVEMBRO
 #Remove chimeras
 > seqtab.nochim <- removeBimeraDenovo(seqtab, method="consensus", multithread=TRUE, verbose=TRUE)
 > dim(seqtab.nochim) 
@@ -85,3 +84,5 @@ PAREI AQUI DIA 24 DE NOVEMBRO
 > saveRDS(seqtab.nochim, "seqtab_final.rds")
 > saveRDS(taxa, "taxa_final.rds")
 > save.image("meu_ambiente_lucas.RData")
+
+
